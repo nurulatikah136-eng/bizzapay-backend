@@ -37,13 +37,17 @@ app.post('/checkout', async (req, res) => {
 
     res.json({ payment_url: response.data.payment_url });
   } catch (error) {
- console.error('Checkout error:', {
-  status: error.response?.status,
-  data: error.response?.data,
-  message: error.message
+    console.error('Checkout error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+
+    res.status(500).json({ error: 'Checkout failed.' });
+  }
 });
 
-// Basic root route (to avoid Cannot GET /)
+// Root Route
 app.get('/', (req, res) => {
   res.send('Bizzapay backend is running.');
 });
