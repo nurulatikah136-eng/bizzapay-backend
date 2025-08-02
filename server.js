@@ -54,7 +54,7 @@ app.post('/checkout', async (req, res) => {
 
 // Health check route
 app.get('/', (req, res) => {
-  res.send('Toyyibpay backend is running');
+  res.send('Toyyibpay backend is running ✅');
 });
 
 // Start server
