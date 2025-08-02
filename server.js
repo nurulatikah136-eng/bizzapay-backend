@@ -1,75 +1,76 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const bodyParser = require('body-parser');
-require('dotenv').config();
+require('dotenv').config(); // Load .env if testing locally
 
 const app = express();
-const port = process.env.PORT || 10000;
+const PORT = process.env.PORT || 10000;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
+
+// Guna environment variable dari Render atau .env
+const secretKey = process.env.TOYYIBPAY_SECRET_KEY;
+const categoryCode = process.env.TOYYIBPAY_CATEGORY_CODE;
 
 // Root endpoint
 app.get('/', (req, res) => {
-  res.send('ToyyibPay backend is running.');
+  res.send('ToyyibPay backend is running ✅');
 });
 
 // Checkout endpoint
 app.post('/checkout', async (req, res) => {
   try {
-    const { name, email, phone, amount } = req.body;
+    const { name, email, phone, amount, description } = req.body;
 
-    // Validate request
-    if (!name || !email || !phone || !amount) {
-      return res.status(400).json({ status: 'error', msg: 'Missing required fields' });
+    if (!name || !email || !phone || !amount || !description) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Use secret key from Render environment variable
-    const secretKey = process.env.TOYYIBPAY_SECRET_KEY;
-    const categoryCode = process.env.TOYYIBPAY_CATEGORY_CODE || 'ynz2durg'; // default value if not set
+    const senAmount = Math.round(parseFloat(amount) * 100); // Convert RM to sen
 
-    if (!secretKey) {
-      return res.status(500).json({ status: 'error', msg: 'userSecretKey is not set' });
-    }
-
-    const billData = {
+    const payload = new URLSearchParams({
       userSecretKey: secretKey,
       categoryCode: categoryCode,
-      billName: 'Product Purchase',
-      billDescription: 'Payment via ToyyibPay',
+      billName: description,
+      billDescription: description,
       billPriceSetting: 1,
       billPayorInfo: 1,
-      billAmount: amount, // in ringgit (e.g., 180.00)
-      billReturnUrl: 'https://yourwebsite.com/return',
-      billCallbackUrl: 'https://yourwebsite.com/callback',
-      billExternalReferenceNo: 'REF' + Date.now(),
+      billAmount: senAmount,
+      billReturnUrl: 'https://google.com', // Ganti dengan URL kau
+      billCallbackUrl: 'https://google.com', // Ganti dengan URL kau
+      billExternalReferenceNo: 'BILL' + Date.now(),
       billTo: name,
       billEmail: email,
-      billPhone: phone
-    };
+      billPhone: phone,
+      billSplitPayment: 0,
+      billDisplayMerchant: 1,
+    });
 
-    // Create bill
-    const response = await axios.post('https://dev.toyyibpay.com/index.php/api/createBill', new URLSearchParams(billData));
+    const response = await axios.post('https://dev.toyyibpay.com/index.php/api/createBill', payload);
 
-    if (Array.isArray(response.data) && response.data[0].BillCode) {
-      const billCode = response.data[0].BillCode;
-      const paymentUrl = `https://dev.toyyibpay.com/${billCode}`;
-      return res.status(200).json({ status: 'success', url: paymentUrl });
-    } else {
-      return res.status(500).json({ status: 'error', msg: 'No BillCode returned', raw: response.data });
+    const billCode = response.data[0]?.BillCode;
+
+    if (!billCode) {
+      return res.status(500).json({ message: 'No BillCode returned' });
     }
 
-  } catch (err) {
-    console.error('Checkout error:', err.message);
-    return res.status(500).json({
-      status: 'error',
-      message: err.message || 'Checkout failed',
+    const paymentUrl = `https://dev.toyyibpay.com/${billCode}`;
+
+    res.json({
+      message: 'Bill created successfully',
+      billCode,
+      paymentUrl,
+    });
+  } catch (error) {
+    console.error('Checkout error:', error.message);
+    res.status(500).json({
+      message: 'Checkout failed',
+      error: error.message,
     });
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
