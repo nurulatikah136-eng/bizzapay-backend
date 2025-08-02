@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-require('dotenv').config(); // Load .env if testing locally
+require('dotenv').config(); // Load .env kalau local
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -9,16 +9,18 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// Guna environment variable dari Render atau .env
+// Guna dari environment (Render / local)
 const secretKey = process.env.TOYYIBPAY_SECRET_KEY;
 const categoryCode = process.env.TOYYIBPAY_CATEGORY_CODE;
 
-// Root endpoint
+// Optional redirect lepas bayar
+const returnUrl = process.env.RETURN_URL || 'https://your-website.com/payment-success';
+const callbackUrl = process.env.CALLBACK_URL || 'https://your-website.com/payment-status';
+
 app.get('/', (req, res) => {
   res.send('ToyyibPay backend is running ✅');
 });
 
-// Checkout endpoint
 app.post('/checkout', async (req, res) => {
   try {
     const { name, email, phone, amount, description } = req.body;
@@ -37,8 +39,8 @@ app.post('/checkout', async (req, res) => {
       billPriceSetting: 1,
       billPayorInfo: 1,
       billAmount: senAmount,
-      billReturnUrl: 'https://google.com', // Ganti dengan URL kau
-      billCallbackUrl: 'https://google.com', // Ganti dengan URL kau
+      billReturnUrl: returnUrl,
+      billCallbackUrl: callbackUrl,
       billExternalReferenceNo: 'BILL' + Date.now(),
       billTo: name,
       billEmail: email,
