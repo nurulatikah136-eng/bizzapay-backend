@@ -8,12 +8,8 @@ app.use(cors());
 app.use(express.json());
 
 const BIZZAPAY_API_KEY = process.env.BIZZAPAY_API_KEY;
-const BIZZAPAY_ENDPOINT = 'https://api.bizzapay.my/v1/checkout';
 const CATEGORY_CODE = process.env.CATEGORY_CODE;
-
-app.get('/', (req, res) => {
-  res.send('Hello from Bizzapay backend!');
-});
+const BIZZAPAY_ENDPOINT = 'https://api.bizzapay.my/v1/checkout';
 
 app.post('/checkout', async (req, res) => {
   try {
@@ -43,4 +39,5 @@ app.post('/checkout', async (req, res) => {
   }
 });
 
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
