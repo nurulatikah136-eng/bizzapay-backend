@@ -37,9 +37,10 @@ app.post('/checkout', async (req, res) => {
 
     res.json({ payment_url: response.data.payment_url });
   } catch (error) {
-    console.error('Checkout error:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Checkout failed.' });
-  }
+ console.error('Checkout error:', {
+  status: error.response?.status,
+  data: error.response?.data,
+  message: error.message
 });
 
 // Basic root route (to avoid Cannot GET /)
