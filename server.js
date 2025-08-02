@@ -1,4 +1,3 @@
-
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
@@ -8,9 +7,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const BIZZAPAY_API_KEY = 'wal581wu-w7ey-d6wh-hu92-2f7jf0h906r4';
+// ❗ GUNA ENV VARIABLE (bukan hardcode lagi)
+const BIZZAPAY_API_KEY = process.env.BIZZAPAY_API_KEY;
+const CATEGORY_CODE = process.env.CATEGORY_CODE;
 const BIZZAPAY_ENDPOINT = 'https://api.bizzapay.my/v1/checkout';
-const CATEGORY_CODE = 'sjbt5y8k';
 
 app.post('/checkout', async (req, res) => {
   try {
