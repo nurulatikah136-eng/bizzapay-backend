@@ -7,10 +7,13 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// ❗ GUNA ENV VARIABLE (bukan hardcode lagi)
 const BIZZAPAY_API_KEY = process.env.BIZZAPAY_API_KEY;
-const CATEGORY_CODE = process.env.CATEGORY_CODE;
 const BIZZAPAY_ENDPOINT = 'https://api.bizzapay.my/v1/checkout';
+const CATEGORY_CODE = process.env.CATEGORY_CODE;
+
+app.get('/', (req, res) => {
+  res.send('Hello from Bizzapay backend!');
+});
 
 app.post('/checkout', async (req, res) => {
   try {
