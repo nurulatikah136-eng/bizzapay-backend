@@ -1,64 +1,75 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const bodyParser = require('body-parser');
+require('dotenv').config();
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 10000;
 
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-const TOYYIBPAY_CATEGORY_CODE = process.env.CATEGORY_CODE;
-const TOYYIBPAY_SECRET_KEY = process.env.TOYYIBPAY_SECRET_KEY;
+// Root endpoint
+app.get('/', (req, res) => {
+  res.send('ToyyibPay backend is running.');
+});
 
+// Checkout endpoint
 app.post('/checkout', async (req, res) => {
   try {
-    const { buyer_name, buyer_email, amount, reference } = req.body;
+    const { name, email, phone, amount } = req.body;
 
-    const formData = new URLSearchParams();
-    formData.append('userSecretKey', TOYYIBPAY_SECRET_KEY);
-    formData.append('categoryCode', TOYYIBPAY_CATEGORY_CODE);
-    formData.append('billName', reference || 'Payment');
-    formData.append('billDescription', 'Online payment');
-    formData.append('billPriceSetting', 1);
-    formData.append('billPayorInfo', 1);
-    formData.append('billAmount', amount * 100); // convert to cents
-    formData.append('billReturnUrl', 'https://yourdomain.com/success');
-    formData.append('billCallbackUrl', 'https://yourdomain.com/callback');
-    formData.append('billTo', buyer_name);
-    formData.append('billEmail', buyer_email);
-    formData.append('billExternalReferenceNo', reference);
-
-    const response = await axios.post(
-      'https://toyyibpay.com/index.php/api/createBill',
-      formData.toString(),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      }
-    );
-
-    const billCode = response.data[0]?.BillCode;
-    if (!billCode) {
-      throw new Error('No BillCode returned');
+    // Validate request
+    if (!name || !email || !phone || !amount) {
+      return res.status(400).json({ status: 'error', msg: 'Missing required fields' });
     }
 
-    const paymentUrl = `https://toyyibpay.com/${billCode}`;
-    res.json({ payment_url: paymentUrl });
-  } catch (error) {
-    console.error('Checkout error:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message
+    // Use secret key from Render environment variable
+    const secretKey = process.env.TOYYIBPAY_SECRET_KEY;
+    const categoryCode = process.env.TOYYIBPAY_CATEGORY_CODE || 'ynz2durg'; // default value if not set
+
+    if (!secretKey) {
+      return res.status(500).json({ status: 'error', msg: 'userSecretKey is not set' });
+    }
+
+    const billData = {
+      userSecretKey: secretKey,
+      categoryCode: categoryCode,
+      billName: 'Product Purchase',
+      billDescription: 'Payment via ToyyibPay',
+      billPriceSetting: 1,
+      billPayorInfo: 1,
+      billAmount: amount, // in ringgit (e.g., 180.00)
+      billReturnUrl: 'https://yourwebsite.com/return',
+      billCallbackUrl: 'https://yourwebsite.com/callback',
+      billExternalReferenceNo: 'REF' + Date.now(),
+      billTo: name,
+      billEmail: email,
+      billPhone: phone
+    };
+
+    // Create bill
+    const response = await axios.post('https://dev.toyyibpay.com/index.php/api/createBill', new URLSearchParams(billData));
+
+    if (Array.isArray(response.data) && response.data[0].BillCode) {
+      const billCode = response.data[0].BillCode;
+      const paymentUrl = `https://dev.toyyibpay.com/${billCode}`;
+      return res.status(200).json({ status: 'success', url: paymentUrl });
+    } else {
+      return res.status(500).json({ status: 'error', msg: 'No BillCode returned', raw: response.data });
+    }
+
+  } catch (err) {
+    console.error('Checkout error:', err.message);
+    return res.status(500).json({
+      status: 'error',
+      message: err.message || 'Checkout failed',
     });
-    res.status(500).json({ error: 'Checkout failed.' });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Toyyibpay backend is running.');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
